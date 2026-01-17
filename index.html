@@ -1,330 +1,338 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+
+  <head>
     <meta charset="UTF-8">
     <title>Shapes Logic Game</title>
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            width: 100vw;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            background-color: #ffffff;
-            font-family: system-ui, -apple-system, sans-serif;
-            overflow: hidden;
-            gap: 20px;
+      body {
+        margin: 0;
+        padding: 0;
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        background-color: #ffffff;
+        font-family: system-ui, -apple-system, sans-serif;
+        overflow: hidden;
+        gap: 20px;
+      }
+
+      .line {
+        display: flex;
+        gap: 80px;
+        /* N pixels spacing */
+        align-items: center;
+        justify-content: center;
+        height: 150px;
+        /* Fixed height to accommodate scaling */
+      }
+
+      .label {
+        position: absolute;
+        font-size: 12px;
+        color: #ccc;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        pointer-events: none;
+      }
+
+      /* Positioning labels relative to lines? Or just let them float nearby */
+      /* Let's wrap lines in a container for better labeling if needed, but simplicity is key. */
+
+      .shape-container {
+        width: 100px;
+        height: 100px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        /* We will apply rotation and scale to this container or inner element */
+      }
+
+      .shape-inner {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: fill 0.3s ease;
+      }
+
+      #line-b .shape-container {
+        cursor: pointer;
+      }
+
+      #line-b .shape-container:hover {
+        filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+      }
+
+      svg {
+        width: 100%;
+        height: 100%;
+        overflow: visible;
+      }
+
+      path,
+      rect {
+        transition: fill 0.3s ease;
+      }
+
+      /* Success animation */
+      @keyframes shine {
+        0% {
+          filter: brightness(1);
         }
 
-        .line {
-            display: flex;
-            gap: 80px; /* N pixels spacing */
-            align-items: center;
-            justify-content: center;
-            height: 150px; /* Fixed height to accommodate scaling */
+        50% {
+          filter: brightness(1.3);
         }
 
-        .label {
-            position: absolute;
-            font-size: 12px;
-            color: #ccc;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            pointer-events: none;
+        100% {
+          filter: brightness(1);
         }
-        
-        /* Positioning labels relative to lines? Or just let them float nearby */
-        /* Let's wrap lines in a container for better labeling if needed, but simplicity is key. */
-        
-        .shape-container {
-            width: 100px;
-            height: 100px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            /* We will apply rotation and scale to this container or inner element */
-        }
+      }
 
-        .shape-inner {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: fill 0.3s ease;
-        }
+      .win-anim {
+        animation: shine 0.5s ease-in-out;
+      }
 
-        #line-b .shape-container {
-            cursor: pointer;
-        }
+      .reset-btn {
+        position: fixed;
+        bottom: 20px;
+        padding: 10px 20px;
+        border: 1px solid #eee;
+        background: white;
+        color: #999;
+        cursor: pointer;
+        border-radius: 20px;
+        font-size: 12px;
+        transition: all 0.2s;
+      }
 
-        #line-b .shape-container:hover {
-            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
-        }
+      .reset-btn:hover {
+        color: #333;
+        border-color: #ccc;
+      }
 
-        svg {
-            width: 100%;
-            height: 100%;
-            overflow: visible;
-        }
-        
-        path, rect {
-            transition: fill 0.3s ease;
-        }
+      /* Fix Triangle Rotation Center (Shape 0) */
+      /* Child index 1 because of template counting? No, we need to target the shape-container where child has specific template? 
+         Hard to select by template used. 
+         Let's just use :nth-child(1) on the line-b/line-a for simplicity as shape 0 is always first. 
+      */
+      .line .shape-container:has(path[d^="M31.5773"]) {
+        transform-origin: 50% 63%;
+      }
 
-        /* Success animation */
-        @keyframes shine {
-            0% { filter: brightness(1); }
-            50% { filter: brightness(1.3); }
-            100% { filter: brightness(1); }
-        }
-
-        .win-anim {
-            animation: shine 0.5s ease-in-out;
-        }
-        
-        .reset-btn {
-            position: fixed;
-            bottom: 20px;
-            padding: 10px 20px;
-            border: 1px solid #eee;
-            background: white;
-            color: #999;
-            cursor: pointer;
-            border-radius: 20px;
-            font-size: 12px;
-            transition: all 0.2s;
-        }
-        
-        .reset-btn:hover {
-            color: #333;
-            border-color: #ccc;
-        }
+      /* Fallback if :has is not consistently supported in target env (though Mac Safari/Chrome support it). 
+         Better: add a class in JS.
+      */
     </style>
-</head>
-<body>
+  </head>
 
+  <body>
     <div style="position: relative;">
-        <!-- Goal Line -->
+      < !-- Goal Line -->
         <div class="line" id="line-a">
-            <!-- Shapes injected by JS -->
+          < !-- Shapes injected by JS -->
         </div>
         <div class="label" style="top: -20px; left: 0; width: 100%; text-align: center;">Target</div>
     </div>
-
-    <!-- Spacer representing N pixels vertical spacing -->
-    <div style="height: 60px;"></div>
-
-    <div style="position: relative;">
-        <!-- Process Line -->
-        <div class="line" id="line-b">
-            <!-- Shapes injected by JS -->
-        </div>
-        <div class="label" style="bottom: -20px; left: 0; width: 100%; text-align: center;">Yours</div>
-    </div>
-    
-    <button class="reset-btn" onclick="initGame()">New Game</button>
-
-    <!-- Templates -->
-    <template id="tmpl-shape-0">
-        <svg viewBox="0 0 67 65" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M31.5773 1.07874C32.3237 -0.359574 34.3812 -0.359579 35.1277 1.07874L66.4775 61.4869C67.1684 62.8182 66.2022 64.4081 64.7023 64.4081H2.00268C0.502733 64.4081 -0.463426 62.8182 0.227497 61.4869L31.5773 1.07874Z" fill="currentColor"/>
-        </svg>
-    </template>
-
-    <template id="tmpl-shape-1">
-        <svg viewBox="0 0 68 66" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M29.2791 1.06766C32.1073 -0.355891 35.4427 -0.355893 38.2709 1.06766L62.0459 13.0343C65.4207 14.733 67.55 18.1885 67.55 21.9667V43.6428C67.55 47.4209 65.4207 50.8765 62.0459 52.5751L38.2709 64.5418C35.4427 65.9653 32.1073 65.9653 29.2791 64.5418L5.50408 52.5751C2.12933 50.8765 3.8147e-06 47.4209 3.8147e-06 43.6428V21.9667C3.8147e-06 18.1885 2.12932 14.733 5.50408 13.0343L29.2791 1.06766Z" fill="currentColor"/>
-        </svg>
-    </template>
-
-    <template id="tmpl-shape-2">
-        <svg viewBox="0 0 69 69" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect width="69" height="69" rx="10" fill="currentColor"/>
-        </svg>
-    </template>
-
-    <script>
-        // --- Configuration ---
-        const COLORS = [
-            '#FF8D28', // Orange (Original Polygon 1)
-            '#FFCC00', // Yellow (Original Polygon 2)
+    < !-- Spacer representing N pixels vertical spacing -->
+      <div style="height: 60px; display: flex; align-items: center; justify-content: center;">
+        <div id="counter-display" style="font-size: 14px; font-family: monospace; color: #888;"></div>
+      </div>
+      <div style="position: relative;">
+        < !-- Process Line -->
+          <div class="line" id="line-b">
+            < !-- Shapes injected by JS -->
+          </div>
+          <div class="label" style="bottom: -20px; left: 0; width: 100%; text-align: center;">Yours</div>
+      </div><button class="reset-btn" onclick="initGame()">New Game</button>
+      < !-- Templates --><template id="tmpl-shape-0"><svg viewBox="0 0 67 65" fill="none"
+            xmlns="http://www.w3.org/2000/svg">
+            <path
+              d="M31.5773 1.07874C32.3237 -0.359574 34.3812 -0.359579 35.1277 1.07874L66.4775 61.4869C67.1684 62.8182 66.2022 64.4081 64.7023 64.4081H2.00268C0.502733 64.4081 -0.463426 62.8182 0.227497 61.4869L31.5773 1.07874Z"
+              fill="currentColor" />
+          </svg></template><template id="tmpl-shape-1"><svg viewBox="0 0 68 66" fill="none"
+            xmlns="http://www.w3.org/2000/svg">
+            <path
+              d="M29.2791 1.06766C32.1073 -0.355891 35.4427 -0.355893 38.2709 1.06766L62.0459 13.0343C65.4207 14.733 67.55 18.1885 67.55 21.9667V43.6428C67.55 47.4209 65.4207 50.8765 62.0459 52.5751L38.2709 64.5418C35.4427 65.9653 32.1073 65.9653 29.2791 64.5418L5.50408 52.5751C2.12933 50.8765 3.8147e-06 47.4209 3.8147e-06 43.6428V21.9667C3.8147e-06 18.1885 2.12932 14.733 5.50408 13.0343L29.2791 1.06766Z"
+              fill="currentColor" />
+          </svg></template><template id="tmpl-shape-2"><svg viewBox="0 0 69 69" fill="none"
+            xmlns="http://www.w3.org/2000/svg">
+            <rect width="69" height="69" rx="10" fill="currentColor" />
+          </svg></template>
+        <script>
+          // --- Configuration ---
+          const COLORS = [
+            '#FF8D28', // Orange
+            '#FFCC00', // Yellow
             '#4ECDC4', // Teal
             '#FF6B6B', // Red
             '#9B59B6'  // Purple
-        ]; 
-        // 5 colors total
+          ];
 
-        const SIZE_SEQUENCE = [1.5, 1.0, 0.6, 1.0]; 
-        // Loop: 3(Big) -> 2(Normal) -> 1(Small) -> 2(Normal) -> ...
-        // Using scales: 1.5, 1.0, 0.6, 1.0 corresponds to "3 > 2 > 1 > 2".
-        
-        const NUM_SHAPES = 3;
-        
-        // --- State ---
-        let goalState = []; // Array of objects
-        let currentState = []; // Array of objects
+          const SIZE_SEQUENCE = [ 1.5, 1.0, 0.6, 1.0 ];
 
-        // --- Render Logic ---
-        function renderShape(el, state) {
-            const container = el.querySelector('.shape-container');
-            const inner = el.querySelector('svg path, svg rect');
-            
+          const NUM_SHAPES = 3;
+
+          // --- State ---
+          let goalState = [];
+          let currentState = [];
+
+          let targetMoves = 0;
+          let playerMoves = 0;
+
+          // --- Render Logic ---
+          function renderShape( el, state ) {
+            const container = el.querySelector( '.shape-container' );
+            const inner = el.querySelector( 'svg path, svg rect' );
+
             // Apply Size (Scale) and Rotation
-            const scale = SIZE_SEQUENCE[state.sizeIndex % SIZE_SEQUENCE.length];
+            const scale = SIZE_SEQUENCE[ state.sizeIndex % SIZE_SEQUENCE.length ];
+            // Rotation is cumulative
             const rotation = state.rotation * 45;
-            
-            container.style.transform = `scale(${scale}) rotate(${rotation}deg)`;
-            
+
+            container.style.transform = `scale(${ scale }) rotate(${ rotation }deg)`;
+
             // Apply Color
-            const color = COLORS[state.colorIndex % COLORS.length];
-            if (inner) inner.setAttribute('fill', color);
-        }
+            const color = COLORS[ state.colorIndex % COLORS.length ];
+            if ( inner ) inner.setAttribute( 'fill', color );
+          }
 
-        function createShapeElement(shapeIndex, isInteractive) {
-            const wrapper = document.createElement('div');
-            const container = document.createElement('div');
+          function createShapeElement( shapeIndex, isInteractive ) {
+            const wrapper = document.createElement( 'div' );
+            const container = document.createElement( 'div' );
             container.className = 'shape-container';
-            
-            const tmpl = document.getElementById(`tmpl-shape-${shapeIndex}`);
-            const clone = tmpl.content.cloneNode(true);
-            
-            container.appendChild(clone);
-            wrapper.appendChild(container);
 
-            if (isInteractive) {
-                wrapper.addEventListener('click', () => handleInteraction(shapeIndex));
+            const tmpl = document.getElementById( `tmpl-shape-${ shapeIndex }` );
+            const clone = tmpl.content.cloneNode( true );
+
+            container.appendChild( clone );
+            wrapper.appendChild( container );
+
+            if ( isInteractive ) {
+              wrapper.addEventListener( 'click', () => handleInteraction( shapeIndex ) );
             }
 
             return wrapper;
-        }
+          }
 
-        // --- Game Logic ---
-        function handleInteraction(clickedIndex) {
-            // Apply effects based on rules
-            // 1. Current shape (clickedIndex): Rotate 45deg
-            currentState[clickedIndex].rotation = (currentState[clickedIndex].rotation + 1) % 8;
+          function updateCounters() {
+            const el = document.getElementById( 'counter-display' );
+            if ( el ) el.textContent = `Goal Complexity: ${ targetMoves } moves | Your Moves: ${ playerMoves }`;
+          }
 
-            // 2. Next shape to right: Change Color
-            // "if there are not enough shapes to the right, just continue counting from the very left"
-            const rightIndex = (clickedIndex + 1) % NUM_SHAPES;
-            currentState[rightIndex].colorIndex = (currentState[rightIndex].colorIndex + 1) % COLORS.length;
+          // --- Game Logic ---
+          function applyMove( state, index ) {
+            state[ index ].rotation++;
+            const r1 = ( index + 1 ) % NUM_SHAPES;
+            state[ r1 ].colorIndex++;
+            const r2 = ( index + 2 ) % NUM_SHAPES;
+            state[ r2 ].sizeIndex++;
+          }
 
-            // 3. Two steps to right: Change Size
-            const twoStepsRightIndex = (clickedIndex + 2) % NUM_SHAPES;
-            currentState[twoStepsRightIndex].sizeIndex = (currentState[twoStepsRightIndex].sizeIndex + 1) % SIZE_SEQUENCE.length;
+          function handleInteraction( clickedIndex ) {
+            applyMove( currentState, clickedIndex );
+            playerMoves++;
 
             updateDisplay();
+            updateCounters();
             checkWin();
-        }
+          }
 
-        function checkWin() {
+          function checkWin() {
             let won = true;
-            for (let i = 0; i < NUM_SHAPES; i++) {
-                const g = goalState[i];
-                const c = currentState[i];
-                
-                // Check Rotation (modulo 8)
-                const rotMatch = (g.rotation % 8) === (c.rotation % 8);
-                // Check Color
-                const colMatch = (g.colorIndex % COLORS.length) === (c.colorIndex % COLORS.length);
-                // Check Size
-                const sizeMatch = (g.sizeIndex % SIZE_SEQUENCE.length) === (c.sizeIndex % SIZE_SEQUENCE.length);
+            for ( let i = 0; i < NUM_SHAPES; i++ ) {
+              const g = goalState[ i ];
+              const c = currentState[ i ];
 
-                if (!rotMatch || !colMatch || !sizeMatch) {
-                    won = false;
-                    break;
-                }
+              // Visual Symmetry Logic
+              let symmetryMod = 8;
+              if ( i === 1 ) symmetryMod = 4; // Hexagon
+              if ( i === 2 ) symmetryMod = 2; // Square/Rect
+
+              const rotMatch = ( g.rotation % symmetryMod ) === ( c.rotation % symmetryMod );
+              const colMatch = ( g.colorIndex % COLORS.length ) === ( c.colorIndex % COLORS.length );
+              const sizeMatch = ( g.sizeIndex % SIZE_SEQUENCE.length ) === ( c.sizeIndex % SIZE_SEQUENCE.length );
+
+              if ( !rotMatch || !colMatch || !sizeMatch ) {
+                won = false;
+                break;
+              }
             }
 
-            if (won) {
-                document.body.style.backgroundColor = '#f0fff4'; // Subtle green tint
-                setTimeout(() => {
-                    // alert('You Matched the Shapes!');
-                    // initGame();
-                }, 100);
+            if ( won ) {
+              document.body.style.backgroundColor = '#f0fff4';
             } else {
-                document.body.style.backgroundColor = '#ffffff';
+              document.body.style.backgroundColor = '#ffffff';
             }
-        }
+          }
 
-        function updateDisplay() {
-            const lineB = document.getElementById('line-b');
-            Array.from(lineB.children).forEach((child, i) => {
-                renderShape(child, currentState[i]);
-            });
-        }
+          function updateDisplay() {
+            const lineB = document.getElementById( 'line-b' );
+            Array.from( lineB.children ).forEach( ( child, i ) => {
+              renderShape( child, currentState[ i ] );
+            } );
+          }
 
-        function generateRandomState() {
-            return Array.from({length: NUM_SHAPES}, () => ({
-                rotation: Math.floor(Math.random() * 8),
-                colorIndex: Math.floor(Math.random() * COLORS.length),
-                sizeIndex: Math.floor(Math.random() * SIZE_SEQUENCE.length)
-            }));
-        }
+          function generateRandomState() {
+            return Array.from( { length: NUM_SHAPES }, () => ( {
+              rotation: Math.floor( Math.random() * 8 ),
+              colorIndex: Math.floor( Math.random() * COLORS.length ),
+              sizeIndex: Math.floor( Math.random() * SIZE_SEQUENCE.length )
+            } ) );
+          }
 
-        function copyState(state) {
-            return state.map(s => ({...s}));
-        }
+          function copyState( state ) {
+            return state.map( s => ( { ...s } ) );
+          }
 
-        function initGame() {
-            const lineA = document.getElementById('line-a');
-            const lineB = document.getElementById('line-b');
-            
+          function initGame() {
+            const lineA = document.getElementById( 'line-a' );
+            const lineB = document.getElementById( 'line-b' );
+
             lineA.innerHTML = '';
             lineB.innerHTML = '';
             document.body.style.backgroundColor = '#ffffff';
 
-            // 1. Generate Goal State
-            goalState = generateRandomState();
+            playerMoves = 0;
 
-            // 2. Render Goal Line
-            goalState.forEach((state, i) => {
-                const el = createShapeElement(i, false);
-                lineA.appendChild(el);
-                renderShape(el, state);
-            });
+            // 1. Generate Process State (Start)
+            currentState = generateRandomState();
 
-            // 3. Create Process State (Scrambled)
-            // To ensure solvability, start from goal state and apply random reverse moves...
-            // Or easier: Start from goal state and apply N random FORWARD moves. 
-            // Since operations are cyclic/reversible, any state reachable from Goal is also able to reach Goal (group theory).
-            // Actually, color is mod 5, rotation mod 8, size mod 4. Everything is a cycle.
-            // So random moves are fine.
-            
-            currentState = copyState(goalState);
-            
-            // Scramble
-            const scrambleMoves = 10 + Math.floor(Math.random() * 10);
-            for(let i=0; i<scrambleMoves; i++) {
-                const randShape = Math.floor(Math.random() * NUM_SHAPES);
-                
-                // Simulate logic on data directly
-                // 1. Rotate current
-                currentState[randShape].rotation = (currentState[randShape].rotation + 1) % 8;
-                // 2. Color next
-                const r1 = (randShape + 1) % NUM_SHAPES;
-                currentState[r1].colorIndex = (currentState[r1].colorIndex + 1) % COLORS.length;
-                // 3. Size next next
-                const r2 = (randShape + 2) % NUM_SHAPES;
-                currentState[r2].sizeIndex = (currentState[r2].sizeIndex + 1) % SIZE_SEQUENCE.length;
+            // 2. Generate Goal State FROM Process State
+            // Apply N random moves to a copy of Process State
+            goalState = copyState( currentState );
+            targetMoves = 5 + Math.floor( Math.random() * 10 ); // 5-14 moves complexity
+
+            for ( let i = 0; i < targetMoves; i++ ) {
+              const randMove = Math.floor( Math.random() * NUM_SHAPES );
+              applyMove( goalState, randMove );
             }
 
-            // 4. Render Process Line
-            currentState.forEach((state, i) => {
-                const el = createShapeElement(i, true);
-                lineB.appendChild(el);
-                renderShape(el, state);
-            });
-        }
+            // 3. Render Lines
+            goalState.forEach( ( state, i ) => {
+              const el = createShapeElement( i, false );
+              lineA.appendChild( el );
+              renderShape( el, state );
+            } );
 
-        // Initialize on load
-        initGame();
+            currentState.forEach( ( state, i ) => {
+              const el = createShapeElement( i, true );
+              lineB.appendChild( el );
+              renderShape( el, state );
+            } );
 
-    </script>
-</body>
+            updateCounters();
+          }
+
+          // Initialize on load
+          initGame();
+        </script>
+  </body>
+
 </html>
