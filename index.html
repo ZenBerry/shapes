@@ -249,9 +249,14 @@
           if ( i === 1 ) symmetryMod = 4; // Hexagon
           if ( i === 2 ) symmetryMod = 2; // Square/Rect
 
+
           const rotMatch = ( g.rotation % symmetryMod ) === ( c.rotation % symmetryMod );
           const colMatch = ( g.colorIndex % COLORS.length ) === ( c.colorIndex % COLORS.length );
-          const sizeMatch = ( g.sizeIndex % SIZE_SEQUENCE.length ) === ( c.sizeIndex % SIZE_SEQUENCE.length );
+
+          // Fix: Compare actual size values, not indices, because 1.0 appears twice in SIZE_SEQUENCE
+          const gSize = SIZE_SEQUENCE[ g.sizeIndex % SIZE_SEQUENCE.length ];
+          const cSize = SIZE_SEQUENCE[ c.sizeIndex % SIZE_SEQUENCE.length ];
+          const sizeMatch = Math.abs( gSize - cSize ) < 0.001;
 
           if ( !rotMatch || !colMatch || !sizeMatch ) {
             won = false;
@@ -301,7 +306,7 @@
         // 2. Generate Goal State FROM Process State
         // Apply N random moves to a copy of Process State
         goalState = copyState( currentState );
-        targetMoves = 5 + Math.floor( Math.random() * 10 ); // 5-14 moves complexity
+        targetMoves = 20 + Math.floor( Math.random() * 31 ); // 20-50 moves complexity
 
         for ( let i = 0; i < targetMoves; i++ ) {
           const randMove = Math.floor( Math.random() * NUM_SHAPES );
